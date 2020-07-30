@@ -771,7 +771,6 @@
 
 - (void)dealloc
 {
-    [self stopPlayVideo];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -982,7 +981,6 @@
         [self.playLayer.player removeTimeObserver:_playerTimeObserver];
         _playerTimeObserver = nil;
     }
-    
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [self removeObeserverOnPlayerItem];
 }

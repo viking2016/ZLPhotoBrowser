@@ -86,7 +86,6 @@
     [self initBottomView];
     [self resetDontBtnState];
     [self resetEditBtnState];
-    [self resetNavBtnState];
     [self resetOriginalBtnState];
     
     if (!self.isPush) {
@@ -333,7 +332,7 @@
     _btnDone.titleLabel.font = [UIFont systemFontOfSize:15];
     _btnDone.layer.masksToBounds = YES;
     _btnDone.layer.cornerRadius = 3.0f;
-    [_btnDone setTitleColor:configuration.bottomBtnsNormalTitleColor forState:UIControlStateNormal];
+    [_btnDone setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [_btnDone setBackgroundColor:configuration.bottomBtnsNormalBgColor];
     _btnDone.frame = CGRectMake(kViewWidth - 82, 7, 70, 30);
     [_btnDone addTarget:self action:@selector(btnDone_Click:) forControlEvents:UIControlEventTouchUpInside];
@@ -341,7 +340,7 @@
     
     [self.view addSubview:_bottomView];
     
-    if (self.isPreView) {
+    if (self.arrSelPhotos.count && !_arrSelAssets.count) {
         //预览本地/网络 图片/视频时，隐藏原图按钮
         [_btnOriginalPhoto removeFromSuperview];
     }
@@ -458,10 +457,6 @@
     ZLPhotoConfiguration *configuration = nav.configuration;
     
     ZLPhotoModel *model = self.models[_currentPage-1];
-    if (configuration.mutuallyExclusiveSelectInMix && configuration.maxSelectCount > 1 && model.type == ZLAssetMediaTypeVideo) {
-        return;
-    }
-    
     if (!btn.selected) {
         //选中
         [btn.layer addAnimation:GetBtnStatusChangedAnimation() forKey:nil];
@@ -610,30 +605,10 @@
 }
 
 #pragma mark - 更新按钮、导航条等显示状态
-
-- (void)resetNavBtnState
-{
-    ZLImageNavigationController *nav = (ZLImageNavigationController *)self.navigationController;
-    ZLPhotoConfiguration *configuration = nav.configuration;
-    if (configuration.mutuallyExclusiveSelectInMix && configuration.maxSelectCount > 1) {
-        ZLPhotoModel *model = self.models[_currentPage-1];
-        _navRightBtn.hidden = model.type == ZLAssetMediaTypeVideo;
-    } else {
-        _navRightBtn.hidden = !configuration.showSelectBtn;
-    }
-}
-
 - (void)resetDontBtnState
 {
     ZLImageNavigationController *nav = (ZLImageNavigationController *)self.navigationController;
-    ZLPhotoConfiguration *configuration = nav.configuration;
-    
-    _btnDone.hidden = NO;
     if (nav.arrSelectedModels.count > 0) {
-        if (configuration.mutuallyExclusiveSelectInMix && configuration.maxSelectCount > 1) {
-            ZLPhotoModel *model = self.models[_currentPage-1];
-            _btnDone.hidden = model.type == ZLAssetMediaTypeVideo;
-        }
         [_btnDone setTitle:[NSString stringWithFormat:@"%@(%ld)", GetLocalLanguageTextValue(ZLPhotoBrowserDoneText), nav.arrSelectedModels.count] forState:UIControlStateNormal];
     } else {
         [_btnDone setTitle:GetLocalLanguageTextValue(ZLPhotoBrowserDoneText) forState:UIControlStateNormal];
@@ -811,8 +786,6 @@
         [self resetIndexLabelState:NO];
         [self resetOriginalBtnState];
         [self resetEditBtnState];
-        [self resetNavBtnState];
-        [self resetDontBtnState];
     }
 }
 

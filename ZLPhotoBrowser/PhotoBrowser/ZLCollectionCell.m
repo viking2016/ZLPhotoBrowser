@@ -11,7 +11,7 @@
 #import "ZLPhotoManager.h"
 #import "ZLDefine.h"
 #import "ToastUtils.h"
-#import "UIControl+EnlargeTouchArea.h"
+#import "UIButton+EnlargeTouchArea.h"
 #import "ZLProgressView.h"
 
 @interface ZLCollectionCell ()
@@ -95,8 +95,9 @@
     self.imageView.frame = self.bounds;
     self.btnSelect.frame = CGRectMake(GetViewWidth(self.contentView)-26, 5, 23, 23);
     self.indexLabel.frame = self.btnSelect.frame;
-    self.maskView.frame = self.bounds;
-    
+    if (self.showMask) {
+        self.maskView.frame = self.bounds;
+    }
     self.videoBottomView.frame = CGRectMake(0, GetViewHeight(self)-15, GetViewWidth(self), 15);
     self.videoImageView.frame = CGRectMake(5, 1, 16, 12);
     self.liveImageView.frame = CGRectMake(5, -1, 15, 15);
@@ -135,6 +136,11 @@
         self.videoBottomView.hidden = YES;
     }
     
+    if (self.showMask) {
+        self.maskView.backgroundColor = self.maskColor;
+        self.maskView.hidden = !model.isSelected;
+    }
+    
     self.btnSelect.hidden = !self.showSelectBtn;
     self.btnSelect.enabled = self.showSelectBtn;
     self.btnSelect.selected = model.isSelected;
@@ -147,7 +153,7 @@
     
     if (self.showSelectBtn) {
         //扩大点击区域
-        [_btnSelect zl_enlargeValidTouchAreaWithInsets:UIEdgeInsetsMake(0, 20, 20, 0)];
+        [_btnSelect setEnlargeEdgeWithTop:0 right:0 bottom:20 left:20];
     }
     
     CGSize size;

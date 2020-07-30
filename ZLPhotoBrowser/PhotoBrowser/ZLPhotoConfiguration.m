@@ -25,9 +25,11 @@
     
     configuration.statusBarStyle = UIStatusBarStyleLightContent;
     configuration.maxSelectCount = 9;
-    configuration.mutuallyExclusiveSelectInMix = NO;
+    configuration.maxVideoSelectCountInMix = 9;
+    configuration.minVideoSelectCountInMix = 0;
     configuration.maxPreviewCount = 20;
     configuration.cellCornerRadio = .0;
+    configuration.allowMixSelect = YES;
     configuration.allowSelectImage = YES;
     configuration.allowSelectVideo = YES;
     configuration.allowSelectGif = YES;
@@ -62,8 +64,6 @@
     configuration.bottomBtnsDisableBgColor = kRGB(39, 80, 32);
     configuration.showSelectedMask = NO;
     configuration.selectedMaskColor = [[UIColor blackColor] colorWithAlphaComponent:0.2];
-    configuration.showInvalidMask = YES;
-    configuration.invalidMaskColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
     configuration.showSelectedIndex = YES;
     configuration.indexLabelBgColor = kRGB(80, 169, 52);
     configuration.cameraProgressColor = kRGB(80, 169, 52);
@@ -80,6 +80,35 @@
     return configuration;
 }
 
+- (void)setMaxSelectCount:(NSInteger)maxSelectCount
+{
+    BOOL changeMaxVideoSelectCount = self.maxVideoSelectCountInMix == _maxSelectCount;
+    
+    _maxSelectCount = MAX(maxSelectCount, 1);
+    
+    if (changeMaxVideoSelectCount) {
+        self.maxVideoSelectCountInMix = _maxSelectCount;
+    } else if (_maxSelectCount < self.maxVideoSelectCountInMix) {
+        self.maxVideoSelectCountInMix = _maxSelectCount;
+    }
+    
+    if (self.minVideoSelectCountInMix > _maxSelectCount) {
+        self.minVideoSelectCountInMix = _maxSelectCount;
+    }
+}
+
+- (void)setMaxVideoSelectCountInMix:(NSInteger)maxVideoSelectCountInMix
+{
+    _maxVideoSelectCountInMix = MAX(MIN(self.maxSelectCount, maxVideoSelectCountInMix), 0);
+    NSAssert(_maxVideoSelectCountInMix >= self.minVideoSelectCountInMix, @"混合选择中，最大视频选择数量不能小于最小视频选择数量");
+}
+
+- (void)setMinVideoSelectCountInMix:(NSInteger)minVideoSelectCountInMix
+{
+    _minVideoSelectCountInMix = MAX(MIN(self.maxSelectCount, minVideoSelectCountInMix), 0);
+    NSAssert(_minVideoSelectCountInMix <= self.maxVideoSelectCountInMix, @"混合选择中，最小视频选择数量不能大于最大视频选择数量");
+}
+
 - (BOOL)showSelectBtn
 {
     return _maxSelectCount > 1 ? YES : _showSelectBtn;
@@ -87,7 +116,7 @@
 
 - (void)setAllowSelectLivePhoto:(BOOL)allowSelectLivePhoto
 {
-    if (@available(iOS 9.1, *)) {
+    if (@available(iOS 9.0, *)) {
         _allowSelectLivePhoto = allowSelectLivePhoto;
     } else {
         _allowSelectLivePhoto = NO;
@@ -96,7 +125,7 @@
 
 - (void)setMaxEditVideoTime:(NSInteger)maxEditVideoTime
 {
-    _maxEditVideoTime = MAX(maxEditVideoTime, 5);
+    _maxEditVideoTime = MAX(maxEditVideoTime, 10);
 }
 
 - (void)setCustomImageNames:(NSArray<NSString *> *)customImageNames

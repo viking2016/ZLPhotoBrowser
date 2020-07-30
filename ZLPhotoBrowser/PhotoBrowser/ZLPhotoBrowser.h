@@ -5,7 +5,7 @@
 //  Created by long on 2019/3/4.
 //  Copyright © 2019年 long. All rights reserved.
 //
-//  version: 3.1.4  2020-04-08
+//  version: 3.1.3  2020-01-13
 
 #import <UIKit/UIKit.h>
 //
@@ -24,7 +24,6 @@
 #import "ZLProgressHUD.h"
 #import "NSBundle+ZLPhotoBrowser.h"
 #import "ZLPhotoModel.h"
-#import "ZLEditVideoController.h"
 
 
 

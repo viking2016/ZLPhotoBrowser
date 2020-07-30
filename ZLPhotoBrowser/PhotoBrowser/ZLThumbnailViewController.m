@@ -196,10 +196,7 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
     
     BOOL showBottomView = YES;
     ZLPhotoConfiguration *configuration = [(ZLImageNavigationController *)self.navigationController configuration];
-    
-    BOOL condition1 = configuration.editAfterSelectThumbnailImage && configuration.maxSelectCount == 1 && (configuration.allowEditImage || configuration.allowEditVideo);
-    BOOL condition2 = configuration.maxSelectCount == 1 && configuration.showSelectBtn == NO;
-    if (condition1 || condition2) {
+    if (configuration.editAfterSelectThumbnailImage && configuration.maxSelectCount == 1 && (configuration.allowEditImage || configuration.allowEditVideo)) {
         //点击后直接编辑则不需要下方工具条
         showBottomView = NO;
         inset.bottom = 0;
@@ -562,7 +559,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
             c.btnSelect.selected = m.isSelected;
             c.maskView.hidden = configuration.showSelectedMask ? !m.isSelected : YES;
             [self refreshCellIndex];
-            [self refreshCellMaskView];
             [self resetBottomBtnsStatus:NO];
         }
     } else if (pan.state == UIGestureRecognizerStateChanged) {
@@ -644,7 +640,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
             c.btnSelect.selected = m.isSelected;
             c.maskView.hidden = configuration.showSelectedMask ? !m.isSelected : YES;
             [self refreshCellIndex];
-            [self refreshCellMaskView];
             [self resetBottomBtnsStatus:NO];
         }
     } else if (pan.state == UIGestureRecognizerStateEnded ||
@@ -667,8 +662,10 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
         return NO;
     }
     if (nav.arrSelectedModels.count > 0) {
-        if (configuration.mutuallyExclusiveSelectInMix &&
-            model.type == ZLAssetMediaTypeVideo) {
+        ZLPhotoModel *sm = nav.arrSelectedModels.firstObject;
+        if (!configuration.allowMixSelect &&
+            ((model.type < ZLAssetMediaTypeVideo && sm.type == ZLAssetMediaTypeVideo) || (model.type == ZLAssetMediaTypeVideo && sm.type < ZLAssetMediaTypeVideo))) {
+            ShowToastLong(@"%@", GetLocalLanguageTextValue(ZLPhotoBrowserCannotSelectVideo));
             return NO;
         }
     }
@@ -751,18 +748,18 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
             }
             [self refreshCellIndex];
         }
-        [self refreshCellMaskView];
+        if (configuration.showSelectedMask) {
+            strongCell.maskView.hidden = !model.isSelected;
+        }
         [self resetBottomBtnsStatus:YES];
     };
     
     cell.allSelectGif = configuration.allowSelectGif;
     cell.allSelectLivePhoto = configuration.allowSelectLivePhoto;
-    if (configuration.mutuallyExclusiveSelectInMix && configuration.maxSelectCount > 1) {
-        cell.showSelectBtn = model.type < ZLAssetMediaTypeVideo;
-    } else {
-        cell.showSelectBtn = configuration.showSelectBtn;
-    }
+    cell.showSelectBtn = configuration.showSelectBtn;
     cell.cornerRadio = configuration.cellCornerRadio;
+    cell.showMask = configuration.showSelectedMask;
+    cell.maskColor = configuration.selectedMaskColor;
     cell.indexLabel.backgroundColor = configuration.indexLabelBgColor;
     cell.showIndexLabel = NO;
     if (configuration.showSelectedIndex) {
@@ -773,9 +770,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
             }
         }];
     }
-    
-    [self setCellMaskView:cell isSelected:model.isSelected model:model];
-    
     cell.model = model;
     
     return cell;
@@ -828,63 +822,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
     }];
 }
 
-- (void)refreshCellMaskView
-{
-    ZLPhotoConfiguration *configuration = [(ZLImageNavigationController *)self.navigationController configuration];
-    if (!configuration.showSelectedMask && !configuration.showInvalidMask) {
-        return;
-    }
-    ZLImageNavigationController *nav = (ZLImageNavigationController *)self.navigationController;
-    NSArray<NSIndexPath *> *visibleIndexPaths = self.collectionView.indexPathsForVisibleItems;
-    [visibleIndexPaths enumerateObjectsUsingBlock:^(NSIndexPath * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        UICollectionViewCell *c = [self.collectionView cellForItemAtIndexPath:obj];
-        if ([c isKindOfClass:ZLTakePhotoCell.class]) {
-            // 拍照cell return
-            return;
-        }
-        ZLCollectionCell *cell = (ZLCollectionCell *)c;
-        
-        NSInteger row = obj.row;
-        if (self.allowTakePhoto && !nav.configuration.sortAscending) {
-            row = obj.row - 1;
-        }
-        
-        ZLPhotoModel *m = self.arrDataSources[row];
-        __block BOOL isSel = NO;
-        [nav.arrSelectedModels enumerateObjectsUsingBlock:^(ZLPhotoModel * _Nonnull obj1, NSUInteger idx1, BOOL * _Nonnull stop) {
-            if ([obj1.asset.localIdentifier isEqualToString:m.asset.localIdentifier]) {
-                isSel = YES;
-                *stop = YES;
-            }
-        }];
-        [self setCellMaskView:cell isSelected:isSel model:m];
-    }];
-}
-
-- (void)setCellMaskView:(ZLCollectionCell *)cell isSelected:(BOOL)isSelected model:(ZLPhotoModel *)model {
-    ZLPhotoConfiguration *configuration = [(ZLImageNavigationController *)self.navigationController configuration];
-    ZLImageNavigationController *nav = (ZLImageNavigationController *)self.navigationController;
-    cell.maskView.hidden = YES;
-    cell.enableSelect = YES;
-    if (isSelected) {
-        cell.maskView.backgroundColor = configuration.selectedMaskColor;
-        cell.maskView.hidden = !configuration.showSelectedMask;
-    } else {
-        NSInteger selCount = nav.arrSelectedModels.count;
-        if (selCount < configuration.maxSelectCount && selCount > 0) {
-            if (configuration.mutuallyExclusiveSelectInMix) {
-                    cell.maskView.backgroundColor = configuration.invalidMaskColor;
-                    cell.maskView.hidden = model.type != ZLAssetMediaTypeVideo;
-                    cell.enableSelect = model.type != ZLAssetMediaTypeVideo;
-            }
-        } else if (selCount >= configuration.maxSelectCount) {
-            cell.maskView.backgroundColor = configuration.invalidMaskColor;
-            cell.maskView.hidden = NO;
-            cell.enableSelect = NO;
-        }
-    }
-}
-
 #pragma mark - UICollectionViewDelegate
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -893,10 +830,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
     if (self.allowTakePhoto && ((configuration.sortAscending && indexPath.row >= self.arrDataSources.count) || (!configuration.sortAscending && indexPath.row == 0))) {
         //拍照
         [self takePhoto];
-        return;
-    }
-    ZLCollectionCell *cell = (ZLCollectionCell *)[collectionView cellForItemAtIndexPath:indexPath];
-    if (!cell.enableSelect) {
         return;
     }
     
@@ -946,13 +879,17 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
     
     if (nav.arrSelectedModels.count > 0) {
         ZLPhotoModel *sm = nav.arrSelectedModels.firstObject;
-        if (configuration.mutuallyExclusiveSelectInMix &&
+        if (!configuration.allowMixSelect &&
             ((model.type < ZLAssetMediaTypeVideo && sm.type == ZLAssetMediaTypeVideo) || (model.type == ZLAssetMediaTypeVideo && sm.type < ZLAssetMediaTypeVideo))) {
+            ShowToastLong(@"%@", GetLocalLanguageTextValue(ZLPhotoBrowserCannotSelectVideo));
             return nil;
         }
     }
     
-    NSArray *arr = [ZLPhotoManager getPhotoInResult:self.albumListModel.result allowSelectVideo:YES allowSelectImage:YES allowSelectGif:configuration.allowSelectGif allowSelectLivePhoto:configuration.allowSelectLivePhoto];
+    BOOL allowSelImage = !(model.type==ZLAssetMediaTypeVideo)?YES:configuration.allowMixSelect;
+    BOOL allowSelVideo = model.type==ZLAssetMediaTypeVideo?YES:configuration.allowMixSelect;
+    
+    NSArray *arr = [ZLPhotoManager getPhotoInResult:self.albumListModel.result allowSelectVideo:allowSelVideo allowSelectImage:allowSelImage allowSelectGif:configuration.allowSelectGif allowSelectLivePhoto:configuration.allowSelectLivePhoto];
     
     NSMutableArray *selIdentifiers = [NSMutableArray array];
     for (ZLPhotoModel *m in nav.arrSelectedModels) {
@@ -978,8 +915,7 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
 
 - (void)takePhoto
 {
-    ZLImageNavigationController *nav = (ZLImageNavigationController *)self.navigationController;
-    ZLPhotoConfiguration *configuration = [nav configuration];
+    ZLPhotoConfiguration *configuration = [(ZLImageNavigationController *)self.navigationController configuration];
     
     if (![ZLPhotoManager haveCameraAuthority]) {
         NSString *message = [NSString stringWithFormat:GetLocalLanguageTextValue(ZLPhotoBrowserNoCameraAuthorityText), kAPPName];
@@ -991,10 +927,6 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
         ShowAlert(@"allowSelectImage与allowRecordVideo不能同时为NO", self);
         return;
     }
-    BOOL canRecordFirstCondition = YES;
-    if (configuration.mutuallyExclusiveSelectInMix && nav.arrSelectedModels.count > 0) {
-        canRecordFirstCondition = NO;
-    }
     if (configuration.useSystemCamera) {
         //系统相机拍照
         if ([UIImagePickerController isSourceTypeAvailable:
@@ -1005,7 +937,7 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
             picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
             picker.sourceType = UIImagePickerControllerSourceTypeCamera;
             NSArray *a1 = configuration.allowSelectImage?@[(NSString *)kUTTypeImage]:@[];
-            NSArray *a2 = (canRecordFirstCondition&&configuration.allowSelectVideo && configuration.allowRecordVideo)?@[(NSString *)kUTTypeMovie]:@[];
+            NSArray *a2 = (configuration.allowSelectVideo && configuration.allowRecordVideo)?@[(NSString *)kUTTypeMovie]:@[];
             NSMutableArray *arr = [NSMutableArray array];
             [arr addObjectsFromArray:a1];
             [arr addObjectsFromArray:a2];
@@ -1022,7 +954,7 @@ typedef NS_ENUM(NSUInteger, SlideSelectType) {
         }
         ZLCustomCamera *camera = [[ZLCustomCamera alloc] init];
         camera.allowTakePhoto = configuration.allowSelectImage;
-        camera.allowRecordVideo = canRecordFirstCondition && configuration.allowSelectVideo && configuration.allowRecordVideo;
+        camera.allowRecordVideo = configuration.allowSelectVideo && configuration.allowRecordVideo;
         camera.sessionPreset = configuration.sessionPreset;
         camera.videoType = configuration.exportVideoType;
         camera.circleProgressColor = configuration.cameraProgressColor;

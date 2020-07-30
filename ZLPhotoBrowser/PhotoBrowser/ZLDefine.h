@@ -29,7 +29,6 @@
 #define ZLPhotoBrowserNoCameraAuthorityText @"ZLPhotoBrowserNoCameraAuthorityText"
 #define ZLPhotoBrowserNoAblumAuthorityText @"ZLPhotoBrowserNoAblumAuthorityText"
 #define ZLPhotoBrowserNoMicrophoneAuthorityText @"ZLPhotoBrowserNoMicrophoneAuthorityText"
-#define ZLPhotoBrowserCameraUnavailableText @"ZLPhotoBrowserCameraUnavailableText"
 #define ZLPhotoBrowseriCloudPhotoText @"ZLPhotoBrowseriCloudPhotoText"
 #define ZLPhotoBrowserGifPreviewText @"ZLPhotoBrowserGifPreviewText"
 #define ZLPhotoBrowserVideoPreviewText @"ZLPhotoBrowserVideoPreviewText"
@@ -156,10 +155,8 @@ typedef NS_ENUM(NSUInteger, ZLLanguageType) {
 
 //录制视频及拍照分辨率
 typedef NS_ENUM(NSUInteger, ZLCaptureSessionPreset) {
-    ZLCaptureSessionPreset320x240,
     ZLCaptureSessionPreset325x288,
     ZLCaptureSessionPreset640x480,
-    ZLCaptureSessionPreset960x540,
     ZLCaptureSessionPreset1280x720,
     ZLCaptureSessionPreset1920x1080,
     ZLCaptureSessionPreset3840x2160,

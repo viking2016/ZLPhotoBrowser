@@ -28,9 +28,17 @@
 //录制视频时候进度条颜色 默认 rgb(80, 169, 56)
 @property (nonatomic, strong) UIColor *circleProgressColor;
 
+@property (nonatomic, assign) BOOL isOnlyFifteenSeconds;
+
 /**
  确定回调，如果拍照则videoUrl为nil，如果视频则image为nil
  */
 @property (nonatomic, copy) void (^doneBlock)(UIImage *image, NSURL *videoUrl);
 
+/// 取消拍摄的回调
+@property (nonatomic, copy) void (^cancelBlock)(void);
+
+
+
 @end
+
